@@ -1,0 +1,63 @@
+{% extends "view_account_layout.html" %}
+{% block post_reviews %}
+<div class="content-section" xmlns="http://www.w3.org/1999/html"  id="product-requests-section">
+<!-- Show Requests that the user has posted -->
+{% if not user.posts %}
+    <h4>No Product Requests </h4>
+{% else %}
+     <div class="d-flex align-items-center justify-content-between">
+        <h4 >Active Product Requests </h4>
+        <a type="button" class="btn btn-primary btn-sm ml-auto" href="{{ url_for('completed_product_requests', username=user.username) }}" >
+                Completed Product Requests
+        </a>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <form id="filter-form" method="GET" action="{{ url_for('view_account', username=user.username) }}">
+                <div class="form-group form-inline">
+                    <label for="filter_by" class="mr-2">Filter by:</label>
+                    <div class="d-inline-block">
+                        <select name="filter_by" id="filter_by" class="form-control" onchange="document.getElementById('filter-form').submit()">
+                            <option value="All" {% if selected_sort_by == 'All' %} selected {% endif %}>All</option>
+                            <option value="Open for delivery offers" {% if selected_filter_by == 'Open for delivery offers' %} selected {% endif %}>Open for delivery offers</option>
+                            <option value="Delivery in process" {% if selected_filter_by == 'Delivery in process' %} selected {% endif %}>Delivery in process</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% for post in posts %}
+        <article class="media content-section">
+            <img class="rounded-circle article-img" src="{{ url_for('static', filename='profile_pics/' + post.author.image_file) }}">
+            <div class="media-body">
+                <div class="article-metadata d-flex justify-content-between">
+                    <div>
+                        <a class="mr-2" href="{{ url_for('view_account', username=post.author.username) }}">{{ post.author.first_name + " " + post.author.last_name }}</a>
+                        <small class="text-muted">{{ post.date_posted.strftime('%I%p • %d %b, %Y') }}</small>
+                    </div>
+                </div>
+                <h4><a class="article-title" href="{{ url_for('post', post_id=post.id) }}">{{ post.product_name + ", " + post.country }}</a></h4>
+                 {% if post.price %}
+                    <h6 class="article-content">{{"Price: "}}{{ post.price }}</h6>
+                {% else %}
+                    <h6 class="article-content">{{"Price: " + post.price_range }}</h6>
+                {% endif %}
+                 <h6 class="article-content">Delivery Tip Amount (USD): {{ post.tip_amount }}</h6>
+                 <p class="article-content">{{ post.content }}</p>
+                {% if post.image_file %}
+                    <img src="{{ url_for('static', filename='post_pics/'+post.image_file) }}" alt="Post Image" class="post-image">
+                {% endif %}
+            </div>
+        </article>
+    {% endfor %}
+{% endif %}
+</div>
+
+
+
+
+
+
+{% endblock %}
+

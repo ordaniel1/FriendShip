@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='login.css') }}">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"/>
+
+    {% if title %}
+        <title>FriendShip - {{ title }} </title>
+    {% else %}
+        <title>FriendShip </title>
+    {% endif %}
+</head>
+
+
+<body>
+<header class="site-header">
+    <nav class="navbar navbar-expand-md navbar-dark bg-steel fixed-top">
+        <div class="container">
+            <a class="navbar-brand mr-4" href="{{ url_for('login') }}" , style="font-size:1.7vw">FriendShip</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle"
+                    aria-controls="navbarToggle" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarToggle">
+                <div class="navbar-nav mr-auto">
+                    <a class="nav-item nav-link" href="{{ url_for('login') }}">Home</a>
+                    <a class="nav-item nav-link" href="{{ url_for('about') }}">About</a>
+                </div>
+                <!-- Navbar Right Side -->
+                <div class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                        <a class="nav-item nav-link" href="{{ url_for('new_post') }}">New Post</a>
+                        <a class="nav-item nav-link" href="{{ url_for('account') }}">Account</a>
+                        <a class="nav-item nav-link" href="{{ url_for('logout') }}">Logout</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<main role="main" class="container">
+    <div class="row">
+        <div class="col-md-6">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                <!-- true allow us to grab the success category we passed into a flashed message -->
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">  <!-- category is success-->
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            <div class="content-section">
+                <form method="POST" action="">
+                    <!-- action="" : When we post this, it's just going back to tha same route we're currently on -->
+                    {{ form.hidden_tag() }} <!-- because we're accessing variables in our templates, add CSRF token-->
+                    <fieldset class="form-group">
+                        <legend class="w-auto"></legend>  <!-- mb4 - margin bottom with a value 4-->
+                        {#                        <a class="btn btn-primary btn-lg btn-block text-dark" style="background-color: #fafafa"#}
+                        {#                           href="#!"#}
+                        {#                           role="button">#}
+                        {#                            <i class="fab fa-facebook fa-lg" style="color: #1268fd;"></i> Continue with Facebook#}
+                        {#                        </a>#}
+                        <a class="btn btn-primary btn-lg btn-block text-dark" style="background-color: #fafafa"
+                           href="{{ url_for('google_login') }}" role="button">
+                            <i class="fab fa-google me-2"></i> Google Sign-In/Up
+                        </a>
+
+
+                        <div class="d-flex align-items-center my-4">
+                            <hr class="flex-grow-1 mx-3 border-gray">
+                            <p class="text-center fw-bold mx-1 mb-0 text-muted">OR</p>
+                            <hr class="flex-grow-1 mx-3 border-gray">
+                        </div>
+
+
+                        <div class="form-group">
+                            {% if form.email.errors %}
+                                {{ form.email(class="form-control form-control-lg is-invalid", placeholder="Email") }}
+                                <!-- Add placeholder attribute with the value "Email" -->
+                                <div class="invalid-feedback">
+                                    {% for error in form.email.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.email(class="form-control form-control-lg", placeholder="Email") }}
+                                <!-- Add placeholder attribute with the value "Email" -->
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            {% if form.password.errors %}
+                                {{ form.password(class="form-control form-control-lg is-invalid", placeholder="Password") }}
+                                <!-- Add placeholder attribute with the value "Password" -->
+                                <div class="invalid-feedback">
+                                    {% for error in form.password.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.password(class="form-control form-control-lg", placeholder="Password") }}
+                                <!-- Add placeholder attribute with the value "Password" -->
+                            {% endif %}
+                        </div>
+
+                        <div class="form-check">
+                            {{ form.remember(class="form-check-input") }}
+                            {{ form.remember.label(class="form-check-label") }}
+                        </div>
+                    </fieldset>
+                    <div class="form-group">
+                        <div class="col">
+                            {{ form.submit(class="btn btn-success btn-block text-white") }}
+                            <!-- Add the "btn-block" class to make the button occupy the full width -->
+                        </div>
+                    </div>
+                    {#                    <small class="text-muted ml-2">#}
+                    {#                        <a href="#">Forgot Password?</a>#}
+                    {#                    </small>#}
+                    <div class="d-flex align-items-center my-4">
+                        <hr class="flex-grow-1 mx-3 border-gray">
+                    </div>
+                    <div class="form-group text-center">
+                        <a class="btn btn-dark" href="{{ url_for('register') }}">Create new account manually</a>
+                    </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="content-section-1">
+                <picture>
+                    <img src={{ url_for('static', filename='logoNoBordersBig.png') }} alt="Image" width=750 height=500>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"
+        integrity="sha512-8iB9+vOL1fQ2NDLcGngLGn0ctU6FbU6duodT3q1aQr1MqtHLsyzsIvUoIHbRzLZctgOZbT6TfT3rYr2+g/LC0A=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+
+</body>
+</html>

@@ -1,0 +1,331 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="content-section" xmlns="http://www.w3.org/1999/html">
+    <div class="media">
+        <img class="rounded-circle account-img" src="{{ image_file }}">
+        <div class="media-body">
+            <h2 class="account-heading">{{ user.first_name + " " + user.last_name }}</h2>
+            <p class="text-secondary">{{ "@" + user.username }}</p>
+            <p class="text">{{"Lives in " + user.city + ", " + user.country }}</p>
+            <p class="text">{{ user.email }}</p>
+            {% if num_reviews>0 %}
+                <div class="rating">
+                    {% for i in range(average_rating|int) %}
+                        <i class="fa fa-star checked" style="color: gold;"></i>
+                    {% endfor %}
+                    {% if average_rating|int != average_rating %}
+                        <i class="fa fa-star-half checked" style="color: gold;"></i>
+                    {% endif %}
+                </div>
+                 <p class="article-content">{{ average_rating }}
+                     <a class="mr-2" href="{{ url_for('view_account_reviews', username=user.username) }}">({{num_reviews}} reviews) </a>
+                 </p>
+            {% endif %}
+            {% if user==current_user %}
+            <a type="button" class="btn btn-primary btn-sm ml-auto" href="{{ url_for('account') }}" >
+                <i class="fas fa-edit mr-2"></i><span class="ms-1 d-none d-sm-inline">Edit Profile</span>
+            </a>
+            {% else %}
+                {% if current_user.has_sent_friend_request(user) %}
+                    <button type="button" class="btn btn-secondary btn-sm ml-auto" id="cancelButton" data-toggle="modal" data-target="#cancelModal">
+                            Pending
+                    </button>
+                {% else %}
+                    {% if user.has_sent_friend_request(current_user) %}
+                        <p>{{ user.first_name + " " + user.last_name + " Sent You A Friend Request " }}</p>
+                        <div class="action-buttons">
+                            <button class="btn btn-success accept-btn" style="margin-left: 10px;" id="accept-friendRequest-btn">Accept</button>
+                            <button class="btn btn-danger reject-btn" id="reject-friendRequest-btn">Reject</button>
+                        </div>
+                    {% else %}
+                        {% if current_user.are_friends(user) %}
+                            <button type="button" class="btn btn-primary btn-sm ml-auto" id="unfriendButton" data-toggle="modal" data-target="#unfriendModal">
+                                Unfriend
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-primary btn-sm ml-auto" id="add-friend-btn">
+                                <i class="fas fa-user-plus mr-2"></i><span class="ms-1 d-none d-sm-inline">Add Friend</span>
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    {% if current_user==user %}
+     <div class="header-links mt-4 custom-header-links">
+         <ul class="links d-flex align-items-center justify-content-center">
+             <li class="header-link-item d-flex align-items-center active">
+                 <a class="pt-1px d-none d-md-block" href="{{ url_for('view_account', username=user.username) }}" data-section-id="product-requests-section">Product Requests</a>
+             </li>
+             <li class="header-link-item ml-3 pl-3 border-left d-flex align-items-center">
+                 <a class="pt-1px d-none d-md-block" href="{{ url_for('view_account_delivery_offers', username=user.username) }}">Delivery Offers</a>
+             </li>
+         </ul>
+     </div>
+    {% endif %}
+
+</div>
+{% block post_reviews %}{% block sidebar %}
+<div class="col-md-4">
+    <div class="content-section">
+        {%if num_friends==0 %}
+            <h5>No Friends</h5>
+
+        {%else%}
+        <a href="{{url_for('friends', username=user.username)}}">
+            <p style="font-size: 22px;">Friends ({{num_friends}})</p>
+        </a>
+        <div class="latest-photos">
+            {% for chunk in friends[:9]|batch(3) %}
+            <div class="row">
+                {% for friend in chunk %}
+                <div class="col-md-4">
+                    <a href="{{ url_for('view_account', username=friend.username) }}">
+                        <figure>
+                            <img class="img-fluid" src="{{ url_for('static', filename='profile_pics/' + friend.image_file) }}" alt="">
+                            <p class="ml-1">{{ friend.first_name+ " "+friend.last_name  }}</p>
+                        </figure>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% if suggestions %}
+    <div class="content-section">
+        <h5 class="mb-3">People You May Know</h5>
+        {% for f in suggestions[:5] %}
+        <div class="user-profile mb-3">
+            <div class="profile-image" style="float: left; margin-right: 10px;">
+                <img class="img-fluid" src="{{ url_for('static', filename='profile_pics/' + f.image_file) }}" alt="" style="width: 100px; height: 100px;">
+            </div>
+            <div class="user-info" style="display: inline-block;   vertical-align: middle;">
+                <p style="margin: 0;"></p>
+                <a href="{{ url_for('view_account', username=f.username) }}">
+            <span class="ms-1 d-none d-sm-inline">{{ f.first_name +" "+ f.last_name }}
+            <i class="fas fa-user-plus ml-2"></i>
+            </span>
+                </a>
+            </div>
+            <div style="clear: both;"></div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% if delivers_suggestions %}
+    <div class="content-section">
+        <h5 class="mb-3">Recommend For You</h5>
+        {% for f in delivers_suggestions[:5] %}
+        <div class="user-profile mb-3">
+            <div class="profile-image" style="float: left; margin-right: 10px;">
+                <img class="img-fluid" src="{{ url_for('static', filename='profile_pics/' + f.image_file) }}" alt="" style="width: 100px; height: 100px;">
+            </div>
+            <div class="user-info" style="display: inline-block;   vertical-align: middle;">
+                <p style="margin: 0;"></p>
+                <a href="{{ url_for('view_account', username=f.username) }}">
+            <span class="ms-1 d-none d-sm-inline">{{ f.first_name +" "+ f.last_name }}
+            <i class="fas fa-user-plus ml-2"></i>
+            </span>
+                </a>
+            </div>
+            <div style="clear: both;"></div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+{% endblock %}{% endblock %}
+
+
+
+
+
+
+
+
+
+
+<!-- cancel friend request Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1" role="dialog" aria-labelledby="cancelModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="cancelModalLabel">Cancel Friend Request</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to cancel friend request?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" id="confirmCancelBtn">Yes, Cancel Friend Request</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- unfriend Modal -->
+<div class="modal fade" id="unfriendModal" tabindex="-1" role="dialog" aria-labelledby="unfriendModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="unfriendModalLabel">Unfriend</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>{{ "Are you sure you want to unfriend "+ user.first_name +" "+user.last_name +"?" }}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" id="confirmUnfriendBtn">Yes, Unfriend</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<!-- script for cancel request -->
+<script>
+document.getElementById("cancelButton").addEventListener("click", function() {
+  $('#cancelModal').modal('show');
+});
+
+document.getElementById("confirmCancelBtn").addEventListener("click", function() {
+  var recipient_id = {{ user.id }};
+  var url = "/cancel_friend_request/" + recipient_id;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", url, true);
+  xhr.setRequestHeader("Content-Type", "application/json");
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      // Friend Request cancelled successfully, perform any necessary UI updates
+      $('#cancelModal').modal('hide');
+      location.reload();
+    }
+  };
+  xhr.send();
+});
+
+
+</script>
+
+
+
+<!-- script for send friend request -->
+<script>
+document.getElementById("add-friend-btn").addEventListener("click", function() {
+
+  var recipient_id = {{ user.id }};
+  var url = "/send_friend_request/" + recipient_id;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", url, true);
+  xhr.setRequestHeader("Content-Type", "application/json");
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+        location.reload();
+    }
+  };
+
+  xhr.send();
+});
+
+
+</script>
+
+
+
+
+<!-- script for accept friend request -->
+<script>
+document.getElementById("accept-friendRequest-btn").addEventListener("click", function() {
+
+  var sender_id = {{ user.id }};
+  var url = "/accept_friend_request/" + sender_id;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", url, true);
+  xhr.setRequestHeader("Content-Type", "application/json");
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+        location.reload();
+    }
+  };
+
+  xhr.send();
+});
+
+
+</script>
+
+<!-- script for reject friend request -->
+<script>
+document.getElementById("reject-friendRequest-btn").addEventListener("click", function() {
+
+  var sender_id = {{ user.id }};
+  var url = "/reject_friend_request/" + sender_id;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", url, true);
+  xhr.setRequestHeader("Content-Type", "application/json");
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+        location.reload();
+    }
+  };
+
+  xhr.send();
+});
+
+
+</script>
+
+
+<!-- script for unfriend -->
+<script>
+document.getElementById("unfriendButton").addEventListener("click", function() {
+  $('#unfriendModal').modal('show');
+});
+
+document.getElementById("confirmUnfriendBtn").addEventListener("click", function() {
+  var friend_id = {{ user.id }};
+  var url = "/unfriend/" + friend_id;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", url, true);
+  xhr.setRequestHeader("Content-Type", "application/json");
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      // Friendship cancelled successfully, perform any necessary UI updates
+      $('#unfriendModal').modal('hide');
+      location.reload();
+    }
+  };
+  xhr.send();
+});
+
+
+</script>
+
+
+
+
+{% endblock content %} <!--contend is not needed, but just be explicit that it's actually closing off the "block content" above-->

@@ -1,0 +1,37 @@
+{% extends "view_account_layout.html" %}
+{% block post_reviews %}
+<div class="content-section" xmlns="http://www.w3.org/1999/html"  id="product-requests-section">
+<!-- Show Requests that the user has posted -->
+{% if not posts %}
+    <h4>No Completed Product Requests </h4>
+{% else %}
+    <h4 >Completed Product Requests </h4>
+    {% for post in posts %}
+        <article class="media content-section">
+            <img class="rounded-circle article-img" src="{{ url_for('static', filename='profile_pics/' + post.author.image_file) }}">
+            <div class="media-body">
+                <div class="article-metadata d-flex justify-content-between">
+                    <div>
+                        <a class="mr-2" href="{{ url_for('view_account', username=post.author.username) }}">{{ post.author.first_name + " " + post.author.last_name }}</a>
+                        <small class="text-muted">{{ post.date_posted.strftime('%I%p • %d %b, %Y') }}</small>
+                    </div>
+                </div>
+                <h4><a class="article-title" href="{{ url_for('post', post_id=post.id) }}">{{ post.product_name + ", " + post.country }}</a></h4>
+                {% if post.price %}
+                    <h6 class="article-content">{{"Price: "}}{{ post.price }}</h6>
+                {% else %}
+                    <h6 class="article-content">{{"Price: " + post.price_range }}</h6>
+                {% endif %}
+                <h6 class="article-content">Delivery Fee (USD): {{ post.tip_amount }}</h6>
+                 <p class="article-content">{{ post.content }}</p>
+                {% if post.image_file %}
+                    <img src="{{ url_for('static', filename='post_pics/'+post.image_file) }}" alt="Post Image" class="post-image">
+                {% endif %}
+            </div>
+        </article>
+    {% endfor %}
+{% endif %}
+</div>
+
+{% endblock %}
+

@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+{% block content %}
+{% if not current_user.help_requests_sent %}
+    <h4>No Sent Help Requests </h4>
+{% else %}
+    <h4 >Sent Help Requests</h4>
+    {% for help_request in current_user.help_requests_sent %}
+        <article class="media content-section">
+            <img class="rounded-circle article-img" src="{{ url_for('static', filename='profile_pics/' + help_request.post.author.image_file) }}">
+            <div class="media-body">
+                <div class="article-metadata d-flex justify-content-between">
+                    <div>
+                        <a class="mr-2" href="{{ url_for('view_account', username=help_request.post.author.username) }}">{{ help_request.post.author.first_name + " " + help_request.post.author.last_name }}</a>
+                        <small class="text-muted">{{ help_request.post.date_posted.strftime('%I%p • %d %b, %Y') }}</small>
+                    </div>
+                    {% if help_request.post.accepted_help_request and help_request.post.accepted_help_request==help_request %}
+                        <a type="button" class="btn btn-success btn-sm ml-auto" href="{{ url_for('post', post_id=help_request.post.id) }}" >
+                            Help Request Accepted
+                        </a>
+                    {% else %}
+                        <a type="button" class="btn btn-secondary btn-sm ml-auto" href="{{ url_for('post', post_id=help_request.post.id) }}" >
+                            Pending
+                        </a>
+                    {% endif %}
+                </div>
+                <h4><a class="article-title" href="{{ url_for('post', post_id=help_request.post.id) }}">{{ help_request.post.product_name + ", " + help_request.post.country }}</a></h4>
+                 <h6 class="article-content">{{"Price: " + help_request.post.price_range }}</h6>
+                 <h6 class="article-content">Delivery Fee (USD): {{ help_request.post.tip_amount }}</h6>
+                 <p class="article-content">{{ help_request.post.content }}</p>
+                {% if help_request.post.image_file %}
+                    <img src="{{ url_for('static', filename='post_pics/'+help_request.post.image_file) }}" alt="Post Image" class="post-image">
+                {% endif %}
+            </div>
+        </article>
+    {% endfor %}
+{% endif %}
+{% endblock content %} <!--contend is not needed, but just be explicit that it's actually closing off the "block content" above-->

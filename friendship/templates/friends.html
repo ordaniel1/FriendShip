@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h2 class="mb-5"> Friends ({{num_friends}})</h2>
+
+    <div class="friend-list" style="display: flex; flex-direction: column;">
+        {% for friend in friends %}
+            <div class="friend-card" style="margin-bottom: 1px;">
+                <article class="media content-section">
+                    <div class="user-card-profile-picture">
+                        <img src="{{ url_for('static', filename='profile_pics/' + friend.image_file) }}" alt="Profile Picture">
+                    </div>
+                    <div class="user-card-user-info">
+                        <div class="user-card-name">
+                            <a href="{{ url_for('view_account', username=friend.username) }}"><p>{{ friend.first_name }} {{ friend.last_name }}</p></a>
+                        </div>
+                        <div class="user-card-username">Username: {{ friend.username }}</div>
+                    </div>
+                </article>
+            </div>
+        {% endfor %}
+    </div>
+
+
+{% endblock content %} <!--contend is not needed, but just be explicit that it's actually closing off the "block content" above-->
+

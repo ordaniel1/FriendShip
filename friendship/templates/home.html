@@ -1,0 +1,122 @@
+{% extends "layout.html" %}
+{% block content %}
+     <div class="row">
+        <div class="col-md-12">
+            <form id="sort-form" method="GET" action="{{ url_for('home') }}">
+                <div class="form-group form-inline">
+                    <label for="sort_by" class="mr-2">Sort by:</label>
+                    <div class="d-inline-block">
+                        <select name="sort_by" id="sort_by" class="form-control" onchange="document.getElementById('sort-form').submit()">
+                            <option value="latest" {% if selected_sort_by == 'latest' %} selected {% endif %}>Latest</option>
+                            <option value="oldest" {% if selected_sort_by == 'oldest' %} selected {% endif %}>Oldest</option>
+                        </select>
+                    </div>
+                    {% if selected_countries %}
+                    <input type="hidden" name="countries" value="{{ ','.join(selected_countries) }}">
+                    {% endif %}
+                    {% if selected_price_ranges %}
+                    <input type="hidden" name="price_ranges" value="{{ ','.join(selected_price_ranges) }}">
+                    {% endif %}
+                    {% if selected_min_tip_amount %}
+                    <input type="hidden" name="min_tip_amount" value="{{ selected_min_tip_amount }}">
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% for post in posts %}
+        <article class="media content-section">
+            <img class="rounded-circle article-img" src="{{ url_for('static', filename='profile_pics/' + post.author.image_file) }}">
+            <div class="media-body">
+                <div class="article-metadata d-flex justify-content-between">
+                    <div>
+                        <a class="mr-2" href="{{ url_for('view_account', username=post.author.username) }}">{{ post.author.first_name + " " + post.author.last_name }}</a>
+                        <small class="text-muted">{{ post.date_posted.strftime('%I%p • %d %b, %Y') }}</small>
+                    </div>
+                    {% if post.author!=current_user %}
+                        {% if (current_user and current_user.has_sent_help_request(post)) %}
+                            {% if post.accepted_help_request and post.accepted_help_request.sender==current_user %}
+                                <a type="button" class="btn btn-success btn-sm ml-auto" href="{{ url_for('post', post_id=post.id) }}" >
+                                    Delivery Offer Accepted
+                                </a>
+                            {% else %}
+                                  <a type="button" class="btn btn-secondary btn-sm ml-auto" href="{{ url_for('post', post_id=post.id) }}" >
+                                        Pending
+                                  </a>
+                            {% endif %}
+                        {% else %}
+                            {% if not post.accepted_help_request %}
+                                <a type="button" class="btn btn-primary btn-sm ml-auto" href="{{ url_for('post', post_id=post.id) }}" >
+                                    Offer A Delivery
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                </div>
+                <h4><a class="article-title" href="{{ url_for('post', post_id=post.id) }}">{{ post.product_name + ", " + post.country }}</a></h4>
+                {% if post.price %}
+                    <h6 class="article-content">{{"Price: "}} ${{ post.price }}</h6>
+                {% else %}
+                    <h6 class="article-content">{{"Price: " + post.price_range }}</h6>
+                {% endif %}
+                <h6 class="article-content">Delivery Fee: ${{ post.tip_amount }}</h6>
+                <p class="article-content">{{ post.content }}</p>
+                {% if post.image_file %}
+                    <img src="{{ url_for('static', filename='post_pics/'+post.image_file) }}" alt="Post Image" class="post-image">
+                {% endif %}
+            </div>
+        </article>
+    {% endfor %}
+
+{% endblock content %} <!--contend is not needed, but just be explicit that it's actually closing off the "block content" above-->
+
+
+{% block sidebar %}
+        <div class="col-md-4">
+               <div class="content-section">
+                   <h5>Filter Product Requests</h5>
+                   <p class='text-muted'> <!--You can put any information here you'd like. -->
+                   <ul class="list-group">
+                   <form method="GET" action="{{ url_for('home') }}">
+                        <div class="form-group">
+                           <label for="countries">Filter by Country:</label>
+                           <select name="countries" id="countries" class="form-control select2" multiple>
+                               {% for country in countries %}
+                               <option value="{{ country }}" {% if country in selected_countries %} selected {% endif %}>{{ country }}</option>
+                               {% endfor %}
+                           </select>
+                       </div>
+
+                       <div class="form-group">
+                           <label for="price_ranges">Filter by Price Range:</label>
+                           <select name="price_ranges" id="price_ranges" class="form-control select2" multiple>
+                               {% for p in price_ranges %}
+                                <option value="{{ p }}" {% if p in selected_price_ranges %} selected {% endif %}>{{ p }}</option>
+                               {% endfor %}
+                           </select>
+                       </div>
+
+                       <div class="form-group">
+                           <label for="min_tip_amount">Minimum Delivery Fee (USD):</label>
+                           <select name="min_tip_amount" id="min_tip_amount" class="form-control">
+                               <option value="Any" {% if selected_min_tip_amount=="Any" %} selected {% endif %}></option>
+                               <option value="5.0" {% if selected_min_tip_amount=="5.0" %} selected {% endif %}>5</option>
+                               <option value="10.0" {% if selected_min_tip_amount=="10.0" %} selected {% endif %}>10</option>
+                               <option value="20.0" {% if selected_min_tip_amount=="20.0" %} selected {% endif %}>20</option>
+                               <option value="50.0" {% if selected_min_tip_amount=="50.0" %} selected {% endif %}>50</option>
+                           </select>
+                       </div>
+                       <input type="hidden" name="sort_by" value="{{ selected_sort_by }}">
+                       <button type="submit" class="btn btn-primary">Filter</button>
+                   </form>
+                   </ul>
+                   </p>
+               </div>
+           </div>
+
+
+
+
+
+{% endblock %}

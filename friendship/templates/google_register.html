@@ -1,0 +1,126 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class="content-section">
+        <form method="POST" action=""> <!-- action="" : When we post this, it's just going back to tha same route we're currently on -->
+            {{ form.hidden_tag() }} <!-- because we're accessing variables in our templates, add CSRF token-->
+            <fieldset class="form-group">
+                <legend class="border-bottom mb-4">One more step...</legend>  <!-- mb4 - margin bottom with a value 4-->
+                <div class="form-group">
+                    {{ form.country.label(class="form-control-label") }}
+                    {% if form.country.errors %}
+                        {{ form.country(class="form-control form-control-lg is-invalid", required="required") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.country.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ form.country(class="form-control form-control-lg select2") }}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.city.label(class="form-control-label") }}
+                    {% if form.city.errors %}
+                        {{ form.city(class="form-control form-control-lg is-invalid", required="required") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.city.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ form.city(class="form-control form-control-lg select2") }}
+                    {% endif %}
+                </div>
+
+
+                <div class="form-row">
+                    <div class="col">
+                        <div class="form-group">
+                            {{ form.phone_code.label(class="form-control-label") }}
+                            {% if form.phone_code.errors %}
+                                {{ form.phone_code(class="form-control form-control-lg is-invalid", required="required") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.phone_code.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.phone_code(class="form-control form-control-lg select2") }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-group">
+                            {{ form.phone_number.label(class="form-control-label") }}
+                                {% if form.phone_number.errors %}
+                                    {{ form.phone_number(class="form-control form-control-lg is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.phone_number.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.phone_number(class="form-control form-control-lg") }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+
+
+            </fieldset>
+            <div class="form-group">
+                    {{ form.submit(class="btn btn-outline-info") }} <!-- nice blueish outline button (bootstrap..) -->
+            </div>
+        </form>
+    </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Get references to the country and city fields
+    var countryField = $("#country");
+    var cityField = $("#city");
+
+    // Function to populate the city choices
+    function populateCityChoices(country) {
+        var url = "http://api.geonames.org/searchJSON";
+        var username = "ordaniel1";  //  GeoNames username
+
+        // Make an AJAX request to retrieve the city choices
+        fetch(url + "?country=" + country + "&maxRows=1000&username=" + username)
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                // Clear existing city options
+                cityField.empty();
+
+                // Add the initial option for "Select a City"
+                var selectOption = $("<option>").val('').text('-Select a City-');
+                cityField.append(selectOption);
+
+                // Populate city options based on the response data
+                if (data.geonames) {
+                    data.geonames.forEach(function (city) {
+                        var option = $("<option>").val(city.name).text(city.name);
+                        cityField.append(option);
+                    });
+                }
+            })
+            .catch(function () {
+                // Handle error if the fetch request fails
+                cityField.empty();
+            });
+    }
+
+    // Event listener for the change event of the country field
+    countryField.on("change", function() {
+        var country = $(this).val();
+        populateCityChoices(country);
+    });
+});
+</script>
+
+{% endblock content %} <!--contend is not needed, but just be explicit that it's actually closing off the "block content" above-->

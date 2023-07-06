@@ -1,0 +1,66 @@
+{% extends "view_account_layout.html" %}
+{% block post_reviews %}
+<div class="content-section" xmlns="http://www.w3.org/1999/html"  id="product-requests-section">
+<!-- Show Delivery offers that the user has sent -->
+{% if not user.help_requests_sent %}
+    <h4> No Delivery Offers </h4>
+{% else %}
+    <div class="d-flex align-items-center justify-content-between">
+        <h4 >Your Active Delivery Offers </h4>
+        <a type="button" class="btn btn-primary btn-sm ml-auto" href="{{ url_for('completed_deliveries', username=user.username) }}" >
+                Completed/Cancelled Deliveries
+        </a>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <form id="filter-form" method="GET" action="{{ url_for('view_account_delivery_offers', username=user.username) }}">
+                <div class="form-group form-inline">
+                    <label for="filter_by" class="mr-2">Filter by:</label>
+                    <div class="d-inline-block">
+                        <select name="filter_by" id="filter_by" class="form-control" onchange="document.getElementById('filter-form').submit()">
+                            <option value="All" {% if selected_sort_by == 'All' %} selected {% endif %}>All</option>
+                            <option value="Accepted" {% if selected_filter_by == 'Accepted' %} selected {% endif %}>Accepted</option>
+                            <option value="Pending" {% if selected_filter_by == 'Pending' %} selected {% endif %}>Pending</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% for help_request in helpRequests %}
+        <article class="media content-section">
+            <img class="rounded-circle article-img" src="{{ url_for('static', filename='profile_pics/' + help_request.post.author.image_file) }}">
+            <div class="media-body">
+                <div class="article-metadata d-flex justify-content-between">
+                    <div>
+                        <a class="mr-2" href="{{ url_for('view_account', username=help_request.post.author.username) }}">{{ help_request.post.author.first_name + " " + help_request.post.author.last_name }}</a>
+                        <small class="text-muted">{{ help_request.post.date_posted.strftime('%I%p • %d %b, %Y') }}</small>
+                    </div>
+                            {% if help_request.post.accepted_help_request and help_request.post.accepted_help_request==help_request %}
+                                <a type="button" class="btn btn-success btn-sm ml-auto" href="{{ url_for('post', post_id=help_request.post.id) }}" >
+                                    Delivery Offer Accepted
+                                </a>
+                            {% else %}
+                                  <a type="button" class="btn btn-secondary btn-sm ml-auto" href="{{ url_for('post', post_id=help_request.post.id) }}" >
+                                        Pending
+                                  </a>
+                            {% endif %}
+                </div>
+                <h4><a class="article-title" href="{{ url_for('post', post_id=help_request.post.id) }}">{{ help_request.post.product_name + ", " + help_request.post.country }}</a></h4>
+                 {% if help_request.post.price %}
+                    <h6 class="article-content">{{"Price: "}} ${{ help_request.post.price }}</h6>
+                {% else %}
+                    <h6 class="article-content">{{"Price: " + help_request.post.price_range }}</h6>
+                {% endif %}
+                 <h6 class="article-content">Delivery Fee: ${{ help_request.post.tip_amount }}</h6>
+                 <p class="article-content">{{ help_request.post.content }}</p>
+                {% if help_request.post.image_file %}
+                    <img src="{{ url_for('static', filename='post_pics/'+help_request.post.image_file) }}" alt="Post Image" class="post-image">
+                {% endif %}
+            </div>
+        </article>
+    {% endfor %}
+    <!-- Continue -->
+{% endif %}
+</div>
+{% endblock %}

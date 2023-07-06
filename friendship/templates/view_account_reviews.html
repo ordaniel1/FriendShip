@@ -1,0 +1,77 @@
+{% extends "view_account_layout.html" %}
+{% block post_reviews %}
+<div class="content-section" xmlns="http://www.w3.org/1999/html" id="reviews-section">
+{% if num_reviews==0 %}
+    <h4>No Reviews </h4>
+{% else %}
+    <h4 >Reviews </h4>
+    <div class="row">
+        <div class="col-md-12">
+            <form id="filter-form" method="GET" action="{{ url_for('view_account_reviews', username=user.username) }}">
+                <div class="form-group form-inline">
+                    <label for="filter_by" class="mr-2">Filter by:</label>
+                    <div class="d-inline-block">
+                        <select name="filter_by" id="filter_by" class="form-control" onchange="document.getElementById('filter-form').submit()">
+                            <option value="All" {% if selected_sort_by == 'All' %} selected {% endif %}>All</option>
+                            <option value="Rated As A Deliver" {% if selected_filter_by == 'Rated As A Deliver' %} selected {% endif %}>Rated As A Deliver</option>
+                            <option value="Rated As A Recipient" {% if selected_filter_by == 'Rated As A Recipient' %} selected {% endif %}>Rated As A Recipient</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% if recipient_avg>0 %}
+    <article class="media content-section", style="width: 400px">
+        <p class="mr-2">{{"Average rating as a recipient: " }}</p>
+                <div class="rating">
+                    {% for i in range(recipient_avg|int) %}
+                        <i class="fa fa-star checked" style="color: gold;"></i>
+                    {% endfor %}
+                    {% if recipient_avg|int != recipient_avg %}
+                        <i class="fa fa-star-half checked" style="color: gold;"></i>
+                    {% endif %}
+                </div>
+        <p class="ml-2">{{recipient_avg}}</p>
+    </article>
+    {% endif %}
+    {% if deliver_avg>0 %}
+    <article class="media content-section", style="width: 400px">
+        <p class="mr-2">{{"Average rating as a deliver: " }}</p>
+                <div class="rating">
+                    {% for i in range(deliver_avg|int) %}
+                        <i class="fa fa-star checked" style="color: gold;"></i>
+                    {% endfor %}
+                    {% if deliver_avg|int != deliver_avg %}
+                        <i class="fa fa-star-half checked" style="color: gold;"></i>
+                    {% endif %}
+                </div>
+        <p class="ml-2">{{deliver_avg}}</p>
+    </article>
+    {% endif %}
+    {% for review in reviews %}
+        <article class="media content-section">
+            <img class="rounded-circle article-img" src="{{ url_for('static', filename='profile_pics/' + review.reviewer.image_file) }}">
+            <div class="media-body">
+                <div class="article-metadata d-flex justify-content-between">
+                    <div>
+                        <a class="mr-2" href="{{ url_for('view_account', username=review.reviewer.username) }}">{{ review.reviewer.first_name + " " + review.reviewer.last_name }}</a>
+                        <small class="text-muted">{{ review.date_added.strftime('%I%p • %d %b, %Y') }}</small>
+                    </div>
+                </div>
+                <div class="rating">
+                    {% for i in range(review.rating|int) %}
+                        <i class="fa fa-star checked" style="color: gold;"></i>
+                    {% endfor %}
+                    {% if review.rating|int != review.rating %}
+                        <i class="fa fa-star-half checked" style="color: gold;"></i>
+                    {% endif %}
+                </div>
+                <p class="article-content">{{ review.rating }}</p>
+                <p class="article-content">{{ review.content }}</p>
+            </div>
+        </article>
+    {% endfor %}
+{% endif %}
+</div>
+{% endblock %} <!--contend is not needed, but just be explicit that it's actually closing off the "block content" above-->

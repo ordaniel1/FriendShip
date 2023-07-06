@@ -1,0 +1,1170 @@
+{% extends "layout.html" %}
+{% block content %}
+<article class="media content-section">
+    <img class="rounded-circle article-img" src="{{ url_for('static', filename='profile_pics/' + post.author.image_file) }}">
+    <div class="media-body">
+        {% if post.author!=current_user %}
+            <div class="article-metadata d-flex justify-content-between">
+        {% else %}
+            <div class="article-metadata">
+        {% endif %}
+            <div>
+                <a class="mr-2" href="{{ url_for('view_account', username=post.author.username) }}">{{ post.author.first_name + " " + post.author.last_name }}</a>
+                <small class="text-muted">{{ post.date_posted.strftime('%I%p • %d %b, %Y') }}</small>
+                {% if post.author==current_user %}
+                     <div class="dropdown" style="float: right;">
+                         <button class="btn p-0" type="button" id="dropdownMenuButton2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal icon-lg pb-3px">
+                                 <circle cx="12" cy="12" r="1"></circle>
+                                 <circle cx="19" cy="12" r="1"></circle>
+                                 <circle cx="5" cy="12" r="1"></circle>
+                             </svg>
+                         </button>
+                         <div class="dropdown-menu" style="width: 150px;" aria-labelledby="dropdownMenuButton2">
+                             {% if post.help_requests %}
+                                <a class="dropdown-item" style="cursor: pointer;" data-toggle="modal" data-target="#cannotEditModal"><i class="fas fa-edit"></i> Edit</a>
+                                {% if post.accepted_help_request %}
+                                    <a class="dropdown-item" style="cursor: pointer;" data-toggle="modal" data-target="#cannotDeleteModal"><i class="fas fa-trash-alt"></i> Delete</a>
+                                {% else %}
+                                    <a class="dropdown-item" style="cursor: pointer;" data-toggle="modal" data-target="#deleteModal"><i class="fas fa-trash-alt"></i> Delete</a>
+                                {% endif %}
+                            {% else %}
+                                <a class="dropdown-item" style="cursor: pointer;" href="{{ url_for('update_post', post_id=post.id) }}"><i class="fas fa-edit"></i>Edit</a>
+                                <a class="dropdown-item" style="cursor: pointer;" data-toggle="modal" data-target="#deleteModal"><i class="fas fa-trash-alt"></i> Delete</a>
+                            {% endif %}
+                         </div>
+                     </div>
+                {% endif %}
+            </div>
+            {% if post.author!=current_user %}
+                {% if current_user and current_user.has_sent_help_request(post)  %}
+                    {% if post.accepted_help_request and post.accepted_help_request.sender==current_user %}
+                        <button type="button" class="btn btn-success btn-sm ml-auto help-button" href="#">
+                            Delivery Offer Accepted
+                        </button>
+                    {% else %}
+                        {% set help_request=current_user.get_help_request(post.id) %}
+                        {% if help_request.is_waiting_tip_amount %}
+                            <button type="button" class="btn btn-secondary btn-sm ml-auto help-button" id="feeOfferButton" data-toggle="modal" data-target="#updateFeeModal">
+                                {{post.author.first_name + " offers you a different delivery fee" }}
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-secondary btn-sm ml-auto help-button" id="cancelButton" data-toggle="modal" data-target="#cancelModal">
+                                Pending
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                {% else %}
+                    {% if not post.accepted_help_request%}
+                        <form id="helpForm" data-post-id="{{ post.id }}">
+                            <button type="button" class="btn btn-primary btn-sm ml-auto help-button" id="helpButton" data-toggle="modal" data-target="#helpModal">
+                                Send A Delivery Offer
+                            </button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+            {% else %}
+            <button type="button" class="btn btn-primary btn-sm ml-auto help-button"  data-toggle="modal" data-target="#requestsModal">
+                View Delivery Offers
+            </button>
+            {% endif %}
+        </div>
+        <h2 class="article-title">{{ post.product_name + ", " + post.country }}</h2>
+        {% if post.price %}
+                <h6 class="article-content">{{"Price: "}} ${{ post.price }}</h6>
+        {% else %}
+                <h6 class="article-content">{{"Price: " + post.price_range }}</h6>
+        {% endif %}
+        <h6 class="article-content">Delivery Fee: ${{ post.tip_amount }}</h6>
+        <p class="article-content">{{ post.content }}</p>
+                {% if post.image_file %}
+                    <img src="{{ url_for('static', filename='post_pics/'+post.image_file) }}" alt="Post Image" class="post-image">
+                {% endif %}
+    </div>
+</article>
+
+
+
+<!-- cannotDeleteModal -->
+<div class="modal fade" id="cannotDeleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="cannotDeleteModalLabel">Delete Request</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-footer">
+          <p style="color: red;">Help request has been accepted. Cannot delete request.</p>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- cannotEditModal -->
+<div class="modal fade" id="cannotEditModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="cannotEditModalLabel">Edit Request</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-footer">
+          <p style="color: red;">Users has already sent help requests. Cannot edit request.</p>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- deleteModal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Delete Request?</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <form action="{{ url_for('delete_post', post_id=post.id) }}" method="POST">
+            <input class="btn btn-danger" type="submit" value="Delete">
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- requestsModal -->
+<div class="modal fade" id="requestsModal" tabindex="-1" role="dialog" aria-labelledby="requestsModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="requestsModalLabel">Delivery Offers</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+          <div id="errorContainer" class="alert alert-danger" style="display: none;"></div>
+          {% if post.current_cancelled_request_id %}
+            <p style="color: red">Delivery cancellation has not been confirmed yet. You cannot accept delivery offers.</p>
+          {% endif %}
+        <ul class="list-group">
+            {% for help_request in post.help_requests %}
+            {% if not help_request.is_cancelled %}
+            {% set sender = help_request.sender %}
+            <li id="request-{{ help_request.id }}" style="list-style-type: none;">
+            <div class="user-container d-flex justify-content-between">
+                <img class="rounded-circle profile-pic-sm align-self-start" src="{{ url_for('static', filename='profile_pics/' + sender.image_file) }}">
+                <div class="media-body">
+                    <a class="ml-2" href="{{ url_for('view_account', username=sender.username) }}"> {{sender.first_name + " " }}{{ sender.last_name }} </a>
+                    <small class="text-muted ml-2">{{ sender.city + ", " + sender.country }}</small>
+                    <div class="d-block">
+                        <small class="text-muted ml-2">{{ "Wants $" }} {{help_request.tip_amount}} {{" For Delivery" }},
+                            Latest Delivery Date: {{ help_request.last_delivery_date.strftime("%d %B, %Y") }}</small>
+                        {% if post.author == current_user %}
+                            {% if help_request.accepted %}
+                            <div class="action-buttons">
+                                <button class="btn btn-secondary accepted-btn" style="margin-left: 10px;">Request Accepted</button>
+                            </div>
+                            {% else %}
+                                <div class="action-buttons">
+                                    {% if not post.current_cancelled_request_id%}
+                                    <button class="btn btn-success accept-btn ml-2 mb-2" onclick="acceptRequest({{ help_request.id }})">Accept</button>
+                                    {% endif %}
+                                    <button class="btn btn-danger reject-btn mb-2" onclick="rejectRequest({{ help_request.id }})">Reject</button>
+                                </div>
+                                {% if help_request.is_waiting_tip_amount %}
+                                    <small class="text-muted ml-2">A request for a lower delivery fee has been sent</small></label>
+                                {% else %}
+                                    <form>
+                                        <div class="form-group">
+                                            <label for="delivery_fee" class="d-flex align-items-center"><small class="text-muted ml-2">Is delivery fee too high ?</small></label>
+                                            <div  class="d-flex">
+                                                <input type="number" class="form-control" id="delivery_fee" style="width: 240px;" placeholder="Ask for a lower delivery fee">
+                                                <button class="btn btn-primary ask-btn ml-2" onclick="deliveryFeeRequest({{ help_request.id }})">Ask</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+            </li>
+            {% endif %}
+            {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- helpModal -->
+<div class="modal fade" id="helpModal" tabindex="-1" role="dialog" aria-labelledby="helpModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="helpModalLabel">Delivery Offer</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="errorContainer" class="alert alert-danger" style="display: none;"></div>
+        <form>
+            <div class="form-group">
+                <label for="tip_amount">Delivery Fee</label>
+                <input type="number" class="form-control" id="tip_amount" placeholder="Enter a delivery fee">
+            </div>
+            <div class="form-group">
+                <label for="datepicker">Select Delivery Date:</label>
+                <p style="color: red;">Pay attention, until the selected date, you have to deliver the product. If you don't deliver it, {{ post.author.first_name }} can cancel the order.</p>
+                <input type="text" class="form-control datepicker" id="datepicker" placeholder="yyyy-mm-dd">
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="sendRequestButton">Send Delivery Offer</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- cancelModal -->
+<div class="modal fade" id="cancelModal" tabindex="-1" role="dialog" aria-labelledby="cancelModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="cancelModalLabel">Cancel Request</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to cancel the request?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" id="confirmCancelBtn">Yes, Cancel Request</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- reviewModal -->
+<div class="modal fade" id="reviewModal" tabindex="-1" role="dialog" aria-labelledby="reviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        {% if current_user == post.author %}
+            <h5 class="modal-title" id="reviewModalLabel">Rate Deliver And Confirm</h5>
+        {% else %}
+            <h5 class="modal-title" id="reviewModalLabel">Rate Recipient And Confirm</h5>
+        {% endif %}
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="errorContainer" class="alert alert-danger" style="display: none;"></div>
+        <form>
+            <div class="form-group">
+                <fieldset class="rating">
+					<input type="radio" id="star5" name="rating" value="5"/><label for="star5" class="full" title="Awesome"></label>
+					<input type="radio" id="star4.5" name="rating" value="4.5"/><label for="star4.5" class="half"></label>
+					<input type="radio" id="star4" name="rating" value="4"/><label for="star4" class="full"></label>
+					<input type="radio" id="star3.5" name="rating" value="3.5"/><label for="star3.5" class="half"></label>
+					<input type="radio" id="star3" name="rating" value="3"/><label for="star3" class="full"></label>
+					<input type="radio" id="star2.5" name="rating" value="2.5"/><label for="star2.5" class="half"></label>
+					<input type="radio" id="star2" name="rating" value="2"/><label for="star2" class="full"></label>
+					<input type="radio" id="star1.5" name="rating" value="1.5"/><label for="star1.5" class="half"></label>
+					<input type="radio" id="star1" name="rating" value="1"/><label for="star1" class="full"></label>
+					<input type="radio" id="star0.5" name="rating" value="0.5"/><label for="star0.5" class="half"></label>
+				</fieldset>
+			    <h6 id="rating-value" style="display: inline-block; margin-left: 10px;"></h6>
+		    </div>
+            <div class="form-group">
+                <label for="review_content"></label>
+                <textarea  type="text" class="form-control" id="review_content" placeholder="Enter review content" maxlength="250"></textarea>
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="sendReviewButton">Confirm</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- updateFeeModal -->
+<div class="modal fade" id="updateFeeModal" tabindex="-1" role="dialog" aria-labelledby="updateFeeModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="updateFeeModalLabel">Delivery Fee</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="errorContainer" class="alert alert-danger" style="display: none;"></div>
+        <form>
+          <div class="form-group">
+              {% set help_request=current_user.get_help_request(post.id) %}
+
+            <label for="new_delivery_fee">{{post.author.first_name + " offers you $"}}
+                {{ help_request.lower_tip_amount  }} as a delivery fee.
+                Enter the desired delivery fee below and click on 'Send'.</label>
+            <input type="number" class="form-control" id="new_delivery_fee" placeholder="Enter Delivery Fee Amount">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="sendFeeButton">Send Request</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+{% if post.accepted_help_request_id %}
+{% if current_user==post.author or current_user==post.accepted_help_request.sender %}
+    <article class="media content-section">
+        <div class="modal-body ">
+            {% if current_user==post.author %}
+                {% if not post.is_arrived_confirmed %}
+                    <div class="text-right">
+                        <i class="fa fa-close close" id="cancelDeliveryButton" data-toggle="modal" data-target="#cancelDeliveryModal"></i>
+                    </div>
+                {% endif %}
+            {% else %}
+                {% if not post.is_arrived %}
+                    <div class="text-right">
+                        <i class="fa fa-close close" id="cancelDeliveryButton" data-toggle="modal" data-target="#cancelDeliveryModal"></i>
+                    </div>
+                {% endif %}
+            {% endif %}
+            <div class="px-4 py-5">
+                {% if current_user == post.accepted_help_request.sender %}
+                    <h4 class="mt-1 text-center theme-color mb-4">{{ "Thank You For The Delivery ! " }}</h4>
+                    {% if not post.is_arrived %}
+                        <h6 class="mt-1 text-center theme-color mb-3">{{ "Have you delivered the product? " }}</h6>
+                        <div class="mt-1 text-center theme-color mb-3">
+                            <button type="button" class="btn btn-primary" id="reviewButton" data-toggle="modal" data-target="#reviewModal">
+                                Click Here
+                            </button>
+                        </div>
+                    {% endif %}
+                    <h5 class="mt-1 theme-color mb-3">{{ "Recipient: " }}
+                        <a class="mr-2" href="{{ url_for('view_account', username=post.author.username) }}">
+                            {{ post.author.first_name + " " + post.author.last_name }}</a>
+                    </h5>
+                    <p class="mt-1 theme-color mb-5">Phone Number: {{ "+"+post.author.phone_code+" "+post.author.phone_number }}  </p>
+                {% endif %}
+                {% if current_user == post.author %}
+                    {% if post.is_arrived %}
+                        {% if post.is_arrived_confirmed %}
+                            <h4 class="mt-1 text-center theme-color mb-4">
+                                {{ "Arrival Confirmed" }}
+                            </h4>
+                        {% else %}
+                            <h4 class="mt-1 text-center theme-color mb-4">{{ "Your Product Has Arrived" }}</h4>
+                            <div class="mt-1 text-center theme-color mb-3">
+                                <button type="button" class="btn btn-primary" id="reviewButton" data-toggle="modal" data-target="#reviewModal">
+                                    Confirm
+                                </button>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <h4 class="mt-1 text-center theme-color mb-4">{{ "Delivery In Process" }}</h4>
+                    {% endif %}
+                    <h5 class="mt-1 theme-color mb-3">{{ "Deliver: " }}
+                        <a class="mr-2" href="{{ url_for('view_account', username=post.accepted_help_request.sender.username) }}">{{ post.accepted_help_request.sender.first_name + " " + post.accepted_help_request.sender.last_name }}</a>
+                    </h5>
+                   <p class="mt-1 theme-color mb-5">Phone Number: {{ "+"+post.accepted_help_request.sender.phone_code+" "+post.accepted_help_request.sender.phone_number }}  </p>
+                {% endif %}
+                <span class="theme-color">Payment Summary</span>
+                <div class="mb-3">
+                    <hr class="new1">
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="font-weight-bold">{{ post.product_name }}</span>
+                    {% if post.price %}
+                        <span class="text-muted">{{post.price}}</span>
+                    {% else %}
+                        <span class="text-muted">{{post.price_range}}</span>
+                    {% endif %}
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="font-weight-bold">Shipping</span>
+                    <span class="text-muted">$ {{ post.accepted_help_request.tip_amount }}</span>
+                </div>
+            </div>
+        </div>
+    </article>
+
+<!-- cancelDeliveryModal -->
+<div class="modal fade" id="cancelDeliveryModal" tabindex="-1" role="dialog" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelDeliveryModalLabel">Cancel Delivery ?</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                {% if current_user==post.author %}
+                <p style="color: red;">You cannot cancel the delivery until {{ post.accepted_help_request.last_delivery_date.strftime("%d %B, %Y") }}</p>
+                <p>Are you sure you want to cancel the delivery ? if you are, please rate {{post.accepted_help_request.sender.first_name}} </p>
+                {% else %}
+                <p>Are you sure you want to cancel the delivery ? if you are, please rate {{post.author.first_name}} </p>
+                {% endif %}
+                <form>
+                    <div class="form-group">
+                        <fieldset class="rating">
+                            <input type="radio" id="cancel_star5" name="rating" value="5"/><label for="cancel_star5" class="full" title="Awesome"></label>
+                            <input type="radio" id="cancel_star4.5" name="rating" value="4.5"/><label for="cancel_star4.5" class="half"></label>
+                            <input type="radio" id="cancel_star4" name="rating" value="4"/><label for="cancel_star4" class="full"></label>
+                            <input type="radio" id="cancel_star3.5" name="rating" value="3.5"/><label for="cancel_star3.5" class="half"></label>
+                            <input type="radio" id="cancel_star3" name="rating" value="3"/><label for="cancel_star3" class="full"></label>
+                            <input type="radio" id="cancel_star2.5" name="rating" value="2.5"/><label for="cancel_star2.5" class="half"></label>
+                            <input type="radio" id="cancel_star2" name="rating" value="2"/><label for="cancel_star2" class="full"></label>
+                            <input type="radio" id="cancel_star1.5" name="rating" value="1.5"/><label for="cancel_star1.5" class="half"></label>
+                            <input type="radio" id="cancel_star1" name="rating" value="1"/><label for="cancel_star1" class="full"></label>
+                            <input type="radio" id="cancel_star0.5" name="rating" value="0.5"/><label for="cancel_star0.5" class="half"></label>
+                        </fieldset>
+                        <h6 id="cancelRating-value" style="display: inline-block; margin-left: 10px;"></h6>
+                    </div>
+                    <div class="form-group">
+                        <label for="cancel_review_content"></label>
+                        <textarea  type="text" class="form-control" id="cancel_review_content" placeholder="Enter review content" maxlength="250"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="confirmCancelDeliveryBtn">Cancel Delivery</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<!-- review Script -->
+<script>
+    document.getElementById("reviewButton").addEventListener("click", function() {
+        $('#reviewDeliverModal').modal('show');
+    });
+
+    let star = document.querySelectorAll('input')
+    let showValue = document.querySelector('#rating-value');
+    let starsVal = 0
+    for (let i = 0; i < star.length; i++) {
+	    star[i].addEventListener('click', function() {
+		i = this.value;
+		starsVal = i;
+		showValue.innerHTML = i;
+	});
+    }
+
+
+   document.getElementById("sendReviewButton").addEventListener("click", function() {
+        var reviewContent = document.getElementById("review_content").value;
+        var stars = starsVal
+        console.log("Stars:", stars);
+
+
+        if (!isStarsSelected(stars)) {
+            displayError("Please select a star rating.");
+            return;
+        }
+
+        if (!isReviewValid(reviewContent)) {
+            displayError("Please enter a valid review content (0-250 characters).");
+            return;
+        }
+
+        var post_id = {{ post.id }}
+        var reviewer_id = {{ post.author.id }};
+        var reviewed_id = {{ post.accepted_help_request.sender.id }}
+        var url = "/send_review/" + post_id
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    $('#reviewModal').modal('hide');
+                    location.reload();
+                } else {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response && response.message) {
+                        displayError(response.message);
+                } else {
+                    displayError("An error occurred. Please try again later.");
+                }
+            }
+        }
+        };
+
+        xhr.send(JSON.stringify({ review_content: reviewContent, stars: stars }));
+   });
+
+function isReviewValid(content) {
+  return content.length >= 0 && content.length <= 250;
+}
+
+function isStarsSelected(stars) {
+  return stars > 0;
+}
+
+
+function displayError(message) {
+  var errorContainer = document.getElementById("errorContainer");
+
+  // Set error message and apply styles
+  errorContainer.textContent = message;
+  errorContainer.style.display = "block";
+  errorContainer.style.color = "red";
+  errorContainer.style.fontWeight = "bold";
+}
+
+
+
+</script>
+
+
+
+<!-- cancel delivery script -->
+<script>
+    document.getElementById("cancelDeliveryButton").addEventListener("click", function() {
+        $('#cancelDeliveryModal').modal('show');
+    });
+
+    let cancel_star = document.querySelectorAll('input')
+    let cancel_showValue = document.querySelector('#cancelRating-value');
+    let cancel_starsVal = 0
+    for (let y = 0; y < cancel_star.length; y++) {
+	    cancel_star[y].addEventListener('click', function() {
+		y = this.value;
+		cancel_starsVal = y;
+		cancel_showValue.innerHTML = y;
+	});
+    }
+
+
+   document.getElementById("confirmCancelDeliveryBtn").addEventListener("click", function() {
+        var cancelReviewContent = document.getElementById("cancel_review_content").value;
+        var cancelStars = cancel_starsVal
+        console.log("Stars:", cancelStars);
+
+
+        if (!isStarsSelected(cancelStars)) {
+            displayError("Please select a star rating.");
+            return;
+        }
+
+        if (!isReviewValid(cancelReviewContent)) {
+            displayError("Please enter a valid review content (0-250 characters).");
+            return;
+        }
+
+        var post_id = {{ post.id }}
+        var url = "/cancel_delivery/" + post_id
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    $('#reviewModal').modal('hide');
+                    location.reload();
+                } else {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response && response.message) {
+                        displayError(response.message);
+                } else {
+                    displayError("An error occurred. Please try again later.");
+                }
+            }
+        }
+        };
+
+        xhr.send(JSON.stringify({ review_content: cancelReviewContent, stars: cancelStars }));
+   });
+
+
+
+
+</script>
+
+
+
+
+{% endif %}
+{% endif %}
+
+{% if current_user==post.author %}
+{% for request in post.help_requests %}
+    {% if request.is_cancelled %}
+        <article class="media content-section">
+        <div class="modal-body ">
+            <div class="px-4 py-5">
+                {% if request.is_cancelled_by_deliver %}
+                    <h4 class="mt-1 text-center theme-color mb-4", style="color: red;">
+                        {{ request.sender.first_name+" "+ request.sender.last_name+" Cancelled The Delivery" }}
+                    </h4>
+                    {% if request.accepted %}
+                        <div class="mt-1 text-center theme-color mb-3">
+                                <button type="button" class="btn btn-primary" id="reviewCancelButton" data-toggle="modal" data-target="#reviewCancelModal">
+                                    Confirm
+                                </button>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <h4 class="mt-1 text-center theme-color mb-4", style="color: red;">
+                         You Cancelled The Delivery
+                    </h4>
+                {% endif %}
+                    <h5 class="mt-1 theme-color mb-3">{{ "Deliver: " }}
+                        <a class="mr-2" href="{{ url_for('view_account', username=request.sender.username) }}">{{ request.sender.first_name + " " + request.sender.last_name }}</a>
+                    </h5>
+                   <p class="mt-1 theme-color mb-5">Phone Number: {{ "+"+request.sender.phone_code+" "+request.sender.phone_number }}  </p>
+                    <span class="theme-color">Payment Summary</span>
+                    <div class="mb-3">
+                        <hr class="new1">
+                    </div>
+                <div class="d-flex justify-content-between">
+                    <span class="font-weight-bold">{{ post.product_name }}</span>
+                    {% if post.price %}
+                        <span class="text-muted">{{post.price}}</span>
+                    {% else %}
+                        <span class="text-muted">{{post.price_range}}</span>
+                    {% endif %}
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="font-weight-bold">Shipping</span>
+                    <span class="text-muted">$ {{ request.tip_amount }}</span>
+                </div>
+            </div>
+        </div>
+    </article>
+
+{% endif %}
+{% endfor %}
+
+
+
+
+<!-- reviewCancelModal -->
+<div class="modal fade" id="reviewCancelModal" tabindex="-1" role="dialog" aria-labelledby="reviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+          <h5 class="modal-title" id="reviewCancelModalLabel">Rate Deliver And Confirm</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="errorContainer" class="alert alert-danger" style="display: none;"></div>
+        <form>
+            <div class="form-group">
+                <fieldset class="rating">
+					<input type="radio" id="reviewCancel_star5" name="rating" value="5"/><label for="reviewCancel_star5" class="full" title="Awesome"></label>
+					<input type="radio" id="reviewCancel_star4.5" name="rating" value="4.5"/><label for="reviewCancel_star4.5" class="half"></label>
+					<input type="radio" id="reviewCancel_star4" name="rating" value="4"/><label for="reviewCancel_star4" class="full"></label>
+					<input type="radio" id="reviewCancel_star3.5" name="rating" value="3.5"/><label for="reviewCancel_star3.5" class="half"></label>
+					<input type="radio" id="reviewCancel_star3" name="rating" value="3"/><label for="reviewCancel_star3" class="full"></label>
+					<input type="radio" id="reviewCancel_star2.5" name="rating" value="2.5"/><label for="reviewCancel_star2.5" class="half"></label>
+					<input type="radio" id="reviewCancel_star2" name="rating" value="2"/><label for="reviewCancel_star2" class="full"></label>
+					<input type="radio" id="reviewCancel_star1.5" name="rating" value="1.5"/><label for="reviewCancel_star1.5" class="half"></label>
+					<input type="radio" id="reviewCancel_star1" name="rating" value="1"/><label for="reviewCancel_star1" class="full"></label>
+					<input type="radio" id="reviewCancel_star0.5" name="rating" value="0.5"/><label for="reviewCancel_star0.5" class="half"></label>
+				</fieldset>
+			    <h6 id="reviewCancel-rating-value" style="display: inline-block; margin-left: 10px;"></h6>
+		    </div>
+            <div class="form-group">
+                <label for="reviewCancel_review_content"></label>
+                <textarea  type="text" class="form-control" id="reviewCancel_review_content" placeholder="Enter review content" maxlength="250"></textarea>
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="confirmReviewCancelButton">Confirm</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- cancel confirm review Script -->
+<script>
+    document.getElementById("reviewCancelButton").addEventListener("click", function() {
+        $('#reviewCancelModal').modal('show');
+    });
+
+    let cancelReview_star = document.querySelectorAll('input')
+    let cancelReview_showValue = document.querySelector('#reviewCancel-rating-value');
+    let cancelReview_starsVal = 0
+    for (let z = 0; z < cancelReview_star.length; z++) {
+	    cancelReview_star[z].addEventListener('click', function() {
+		z = this.value;
+		cancelReview_starsVal = z;
+		cancelReview_showValue.innerHTML = z;
+	});
+    }
+
+
+   document.getElementById("confirmReviewCancelButton").addEventListener("click", function() {
+        var cancelReview_reviewContent = document.getElementById("reviewCancel_review_content").value;
+        var cancelReviewStars = cancelReview_starsVal
+        console.log("Stars:", cancelReviewStars);
+
+
+        if (!isStarsSelected(cancelReviewStars)) {
+            displayError("Please select a star rating.");
+            return;
+        }
+
+        if (!isReviewValid(cancelReview_reviewContent)) {
+            displayError("Please enter a valid review content (0-250 characters).");
+            return;
+        }
+
+        var post_id = {{ post.id }}
+        var url = "/confirm_cancelled_delivery/" + post_id
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    $('#reviewCancelModal').modal('hide');
+                    location.reload();
+                } else {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response && response.message) {
+                        displayError(response.message);
+                } else {
+                    displayError("An error occurred. Please try again later.");
+                }
+            }
+        }
+        };
+
+        xhr.send(JSON.stringify({ review_content: cancelReview_reviewContent, stars: cancelReviewStars }));
+   });
+
+function isReviewValid(content) {
+  return content.length >= 0 && content.length <= 250;
+}
+
+function isStarsSelected(stars) {
+  return stars > 0;
+}
+
+
+function displayError(message) {
+  var errorContainer = document.getElementById("errorContainer");
+
+  // Set error message and apply styles
+  errorContainer.textContent = message;
+  errorContainer.style.display = "block";
+  errorContainer.style.color = "red";
+  errorContainer.style.fontWeight = "bold";
+}
+
+
+
+</script>
+
+
+{% else %}
+    {% if current_user.get_help_request(post.id) %}
+        {% set request=current_user.get_help_request(post.id) %}
+        {% if request.is_cancelled %}
+            <article class="media content-section">
+        <div class="modal-body ">
+            <div class="px-4 py-5">
+                    {%if request.is_cancelled_by_deliver %}
+                    <h4 class="mt-1 text-center theme-color mb-4", style="color: red;">
+                         You Cancelled The Delivery
+                    </h4>
+                    {% else %}
+                        <h4 class="mt-1 text-center theme-color mb-4", style="color: red;">
+                            {{post.author.first_name + " " + post.author.last_name + " Cancelled The Delivery"}}
+                        </h4>
+                    {% endif %}
+                    <h5 class="mt-1 theme-color mb-3">{{ "Recipient: " }}
+                        <a class="mr-2" href="{{ url_for('view_account', username=post.author.username) }}">{{ post.author.first_name + " " + post.author.last_name }}</a>
+                    </h5>
+                   <p class="mt-1 theme-color mb-5">Phone Number: {{ "+"+post.author.phone_code+" "+post.author.phone_number }}  </p>
+                    <span class="theme-color">Payment Summary</span>
+                    <div class="mb-3">
+                        <hr class="new1">
+                    </div>
+                <div class="d-flex justify-content-between">
+                    <span class="font-weight-bold">{{ post.product_name }}</span>
+                    {% if post.price %}
+                        <span class="text-muted">$ {{post.price}}</span>
+                    {% else %}
+                        <span class="text-muted">{{post.price_range}}</span>
+                    {% endif %}
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="font-weight-bold">Shipping</span>
+                    <span class="text-muted">$ {{ request.tip_amount }}</span>
+                </div>
+            </div>
+        </div>
+        </article>
+        {% endif %}
+    {% endif %}
+
+{% endif %}
+
+<style>
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+</style>
+
+
+
+
+
+<!-- script for send help request -->
+<script>
+document.getElementById("helpButton").addEventListener("click", function() {
+  $('#helpModal').modal('show');
+});
+
+document.getElementById("sendRequestButton").addEventListener("click", function() {
+  var tipAmount = document.getElementById("tip_amount").value;
+  if (!isPositiveNumber(tipAmount)) {
+    displayError("Please enter a valid tip amount.");
+    return;
+  }
+  var date = document.getElementById("datepicker").value;
+
+  // Validate the date format (yyyy-mm-dd)
+  var dateFormatRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateFormatRegex.test(date)) {
+    displayError("Please enter a valid date in the format yyyy-mm-dd.");
+    return;
+  }
+
+  // Convert the date string to a Date object
+  var selectedDate = new Date(date);
+
+  // Get the current date
+  var currentDate = new Date();
+
+  // Compare the selected date with the current date
+  if (selectedDate < currentDate) {
+    displayError("Please select a date in the future.");
+    return;
+  }
+
+
+  var postId = {{ post.id }};
+  var url = "/send_help_request/" + postId;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", url, true);
+  xhr.setRequestHeader("Content-Type", "application/json");
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (xhr.status === 200) {
+        //changeToCancelButton();
+        $('#helpModal').modal('hide');
+        location.reload();
+      } else {
+        var response = JSON.parse(xhr.responseText);
+        if (response && response.message) {
+          displayError(response.message);
+        } else {
+          displayError("An error occurred. Please try again later.");
+        }
+      }
+    }
+  };
+
+  xhr.send(JSON.stringify({ tip_amount: tipAmount, date: date }));
+});
+
+function isPositiveNumber(value) {
+  var floatValue = parseFloat(value);
+  return !isNaN(floatValue) && floatValue > 0;
+}
+
+function displayError(message) {
+  var errorContainer = document.getElementById("errorContainer");
+
+  // Set error message and apply styles
+  errorContainer.textContent = message;
+  errorContainer.style.display = "block";
+  errorContainer.style.color = "red";
+  errorContainer.style.fontWeight = "bold";
+}
+
+
+</script>
+
+
+
+
+<!-- script for update delivery fee -->
+<script>
+document.getElementById("feeOfferButton").addEventListener("click", function() {
+  $('#updateFeeModal').modal('show');
+});
+
+document.getElementById("sendFeeButton").addEventListener("click", function() {
+  var newDeliveryFee = document.getElementById("new_delivery_fee").value;
+
+  if (!isPositiveNumber(newDeliveryFee)) {
+    displayError("Please enter a valid tip amount.");
+    return;
+  }
+
+  var helpRequestId = {{ current_user.get_help_request(post.id).id }}
+  var url = "/change_tip_amount/" + helpRequestId;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", url, true);
+  xhr.setRequestHeader("Content-Type", "application/json");
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (xhr.status === 200) {
+        $('#updateFeeModal').modal('hide');
+        location.reload();
+      } else {
+        var response = JSON.parse(xhr.responseText);
+        if (response && response.message) {
+          displayError(response.message);
+        } else {
+          displayError("An error occurred. Please try again later.");
+        }
+      }
+    }
+  };
+
+  xhr.send(JSON.stringify({ tip_amount: newDeliveryFee }));
+});
+
+
+</script>
+
+
+
+
+
+<!-- script for cancel request -->
+<script>
+document.getElementById("cancelButton").addEventListener("click", function() {
+  $('#cancelModal').modal('show');
+});
+
+document.getElementById("confirmCancelBtn").addEventListener("click", function() {
+  var postId = {{ post.id }};
+  var url = "/cancel_help_request/" + postId;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", url, true);
+  xhr.setRequestHeader("Content-Type", "application/json");
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      //changeToHelpButton();
+      // Request cancelled successfully, perform any necessary UI updates
+      $('#cancelModal').modal('hide');
+      location.reload();
+    }
+  };
+
+  xhr.send();
+});
+
+
+function changeToHelpButton() {
+  var cancelButton = document.getElementById("cancelButton");
+  var helpButton = document.createElement("button");
+
+  helpButton.type = "button";
+  helpButton.classList.add("btn", "btn-primary", "btn-sm", "ml-auto", "help-button");
+  helpButton.id = "helpButton";
+  helpButton.dataset.toggle = "modal";
+  helpButton.dataset.target = "#helpModal";
+  helpButton.innerText = "Help {{ post.author.first_name }}";
+
+  helpButton.addEventListener("click", function() {
+    $('#helpModal').modal('show');
+  });
+
+  cancelButton.parentNode.replaceChild(helpButton, cancelButton);
+}
+
+
+</script>
+
+
+
+
+
+
+
+
+<script>
+  function acceptRequest(helpRequestId) {
+    var url = "/accept_help_request/" + helpRequestId;
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        // Request accepted successfully, perform any necessary UI updates
+        $('#requestsModal').modal('hide');
+        location.reload();
+      } else {
+        var response = JSON.parse(xhr.responseText);
+        if (response && response.message) {
+          displayError(response.message);
+        } else {
+          displayError("An error occurred. Please try again later.");
+        }
+      }
+
+
+
+
+    };
+
+    xhr.send();
+  }
+
+  function rejectRequest(requestId) {
+    var confirmation = confirm("Are you sure you want to reject this request?");
+
+    if (confirmation) {
+        var url = "/reject_help_request/" + requestId;
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                var listItem = document.getElementById("request-" + requestId);
+                listItem.remove();
+            }
+        };
+
+        xhr.send();
+    }
+  }
+
+
+</script>
+
+
+
+<script>
+  function deliveryFeeRequest(helpRequestId) {
+    var deliveryFee = document.getElementById("delivery_fee").value;
+
+    if (!isPositiveNumber(deliveryFee)) {
+        displayError("Please enter a valid tip amount.");
+        return;
+    }
+
+
+
+    var url = "/change_tip_amount/" + helpRequestId;
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        // Request accepted successfully, perform any necessary UI updates
+        $('#requestsModal').modal('hide');
+        location.reload();
+      } else {
+        var response = JSON.parse(xhr.responseText);
+        if (response && response.message) {
+          displayError(response.message);
+        } else {
+          displayError("An error occurred. Please try again later.");
+        }
+      }
+
+
+
+
+    };
+
+    xhr.send(JSON.stringify({ tip_amount: deliveryFee }));
+  }
+
+</script>
+
+
+
+
+
+
+
+
+<!-- Include jQuery library -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Include Bootstrap JavaScript -->
+
+
+
+
+
+
+{% endblock content %} <!--contend is not needed, but just be explicit that it's actually closing off the "block content" above-->

@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="content-section" xmlns="http://www.w3.org/1999/html" >
+<h2>Notifications</h2>
+{% for notification in notifications  %}
+{% set args_dict = notification.args|string_to_dict %}
+<a href="{{ url_for(notification.endpoint, **args_dict) }}" class="notification-link" id="notification-link" onclick="markAsRead({{ notification.id }})">
+    <div class="notifications-item {% if not notification.is_read %}unread{% endif %}"> <img src="{{ url_for('static', filename='profile_pics/' + notification.sender.image_file) }}" alt="img">
+        <div class="text">
+            <p>{{ notification.content }}</p>
+            <small class="text-muted">{{ notification.date_created.strftime('%H:%M • %d %b, %Y') }}</small>
+        </div>
+    </div>
+</a>
+{% endfor %}
+</div>
+{% endblock content %} <!--contend is not needed, but just be explicit that it's actually closing off the "block content" above-->

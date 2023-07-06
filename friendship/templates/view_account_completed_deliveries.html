@@ -1,0 +1,46 @@
+{% extends "view_account_layout.html" %}
+{% block post_reviews %}
+<div class="content-section" xmlns="http://www.w3.org/1999/html"  id="product-requests-section">
+<!-- Show Requests that the user has posted -->
+{% if not helpRequests %}
+    <h4>No Completed/Cancelled Deliveries </h4>
+{% else %}
+    <h4 >Completed/Cancelled Deliveries </h4>
+    {% for help_request in helpRequests %}
+        <article class="media content-section">
+            <img class="rounded-circle article-img" src="{{ url_for('static', filename='profile_pics/' + help_request.post.author.image_file) }}">
+            <div class="media-body">
+                <div class="article-metadata d-flex justify-content-between">
+                    <div>
+                        <a class="mr-2" href="{{ url_for('view_account', username=help_request.post.author.username) }}">{{ help_request.post.author.first_name + " " + help_request.post.author.last_name }}</a>
+                        <small class="text-muted">{{ help_request.post.date_posted.strftime('%I%p • %d %b, %Y') }}</small>
+                    </div>
+                            {% if help_request.is_cancelled %}
+                                <a type="button" class="btn btn-danger btn-sm ml-auto" href="{{ url_for('post', post_id=help_request.post.id) }}" >
+                                    Cancelled
+                                </a>
+                            {% else %}
+                                  <a type="button" class="btn btn-success btn-sm ml-auto" href="{{ url_for('post', post_id=help_request.post.id) }}" >
+                                        Completed
+                                  </a>
+                            {% endif %}
+                </div>
+                <h4><a class="article-title" href="{{ url_for('post', post_id=help_request.post.id) }}">{{ help_request.post.product_name + ", " + help_request.post.country }}</a></h4>
+                 {% if help_request.post.price %}
+                    <h6 class="article-content">{{"Price: "}} ${{ help_request.post.price }}</h6>
+                {% else %}
+                    <h6 class="article-content">{{"Price: " + help_request.post.price_range }}</h6>
+                {% endif %}
+                 <h6 class="article-content">Delivery Fee: ${{ help_request.post.tip_amount }}</h6>
+                 <p class="article-content">{{ help_request.post.content }}</p>
+                {% if help_request.post.image_file %}
+                    <img src="{{ url_for('static', filename='post_pics/'+help_request.post.image_file) }}" alt="Post Image" class="post-image">
+                {% endif %}
+            </div>
+        </article>
+    {% endfor %}
+{% endif %}
+</div>
+
+{% endblock %}
+
